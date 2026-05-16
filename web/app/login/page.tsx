@@ -3,6 +3,8 @@
 import { signIn } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ThemeToggle } from '../../components/molecules/ThemeToggle'
+import { Button } from '../../components/atoms/Button'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -26,38 +28,44 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-8 bg-white rounded shadow">
-        <h1 className="text-2xl font-bold mb-6 text-center">Mail Catcher Login</h1>
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+    <div className="flex min-h-screen items-center justify-center bg-bg-main">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <div className="w-full max-w-md p-8 bg-bg-card rounded-lg shadow-xl border border-border-subtle">
+        <h1 className="text-2xl font-bold mb-6 text-center text-text-main">Mail Catcher Login</h1>
+        {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
-            <label className="block text-gray-700 mb-2">Username</label>
+            <label className="block text-text-muted mb-2 text-sm font-medium">Username</label>
             <input
               type="text"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border border-border-subtle rounded bg-bg-main text-text-main focus:outline-none focus:ring-2 focus:ring-brand-primary"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
             />
           </div>
           <div className="mb-6">
-            <label className="block text-gray-700 mb-2">Password</label>
+            <label className="block text-text-muted mb-2 text-sm font-medium">Password</label>
             <input
               type="password"
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border border-border-subtle rounded bg-bg-main text-text-main focus:outline-none focus:ring-2 focus:ring-brand-primary"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
           </div>
-          <button
+          <Button
             type="submit"
-            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+            className="w-full"
           >
             Login
-          </button>
+          </Button>
         </form>
+        <div className="mt-6 text-center text-xs text-text-muted">
+          Default: admin / admin
+        </div>
       </div>
     </div>
   )

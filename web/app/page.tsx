@@ -3,6 +3,7 @@ import prisma from "../lib/db"
 import { redirect } from "next/navigation"
 import { Mail, Settings, LogOut, Inbox, Clock, User as UserIcon, Tag } from "lucide-react"
 import Link from "next/link"
+import { ThemeToggle } from "../components/molecules/ThemeToggle"
 
 export default async function DashboardPage({
   searchParams,
@@ -49,16 +50,19 @@ export default async function DashboardPage({
   const attachments = selectedEmail?.attachments || []
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-bg-main overflow-hidden text-text-main">
       {/* Sidebar */}
-      <div className="w-64 bg-white border-r flex flex-col flex-shrink-0">
-        <div className="p-4 border-b flex items-center gap-2 font-bold text-xl text-blue-600">
-          <Mail size={24} />
-          <span>Mail Catcher</span>
+      <div className="w-64 bg-bg-sidebar border-r border-border-subtle flex flex-col flex-shrink-0">
+        <div className="p-4 border-b border-border-subtle flex items-center justify-between">
+          <div className="flex items-center gap-2 font-bold text-xl text-brand-primary">
+            <Mail size={24} />
+            <span>Mail Catcher</span>
+          </div>
+          <ThemeToggle />
         </div>
         
         <div className="flex-1 overflow-y-auto p-4">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2">
             <Inbox size={14} /> Inboxes
           </h2>
           <div className="space-y-1">
@@ -66,10 +70,10 @@ export default async function DashboardPage({
               <Link
                 key={inbox.credentialId}
                 href={`/?inbox=${inbox.credentialId}`}
-                className={`block p-2 rounded text-sm ${
+                className={`block p-2 rounded text-sm transition-colors ${
                   selectedInboxId === inbox.credentialId
-                    ? "bg-blue-50 text-blue-700 font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-brand-primary/10 text-brand-primary font-medium"
+                    : "text-text-muted hover:bg-bg-main hover:text-text-main"
                 }`}
               >
                 {inbox.smtpUser}
@@ -78,14 +82,14 @@ export default async function DashboardPage({
           </div>
         </div>
 
-        <div className="p-4 border-t space-y-2">
+        <div className="p-4 border-t border-border-subtle space-y-2">
           {userRole === "ADMIN" && (
-            <Link href="/settings" className="flex items-center gap-2 p-2 text-sm text-gray-600 hover:bg-gray-100 rounded">
+            <Link href="/settings" className="flex items-center gap-2 p-2 text-sm text-text-muted hover:bg-bg-main hover:text-text-main rounded transition-colors">
               <Settings size={16} />
               <span>Settings</span>
             </Link>
           )}
-          <div className="flex items-center gap-2 p-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 p-2 text-sm text-text-muted border-t border-border-subtle/50 pt-4 mt-2">
             <UserIcon size={16} />
             <span className="truncate">{session.user?.name}</span>
           </div>
@@ -93,7 +97,7 @@ export default async function DashboardPage({
             'use server'
             await signOut()
           }}>
-            <button className="flex items-center gap-2 p-2 text-sm text-red-600 hover:bg-red-50 rounded w-full text-left">
+            <button className="flex items-center gap-2 p-2 text-sm text-red-500 hover:bg-red-500/10 rounded w-full text-left transition-colors">
               <LogOut size={16} />
               <span>Logout</span>
             </button>
@@ -102,32 +106,32 @@ export default async function DashboardPage({
       </div>
 
       {/* Email List */}
-      <div className="w-96 bg-white border-r flex flex-col flex-shrink-0 overflow-hidden">
-        <div className="p-4 border-b bg-gray-50 flex justify-between items-center">
+      <div className="w-96 bg-bg-card border-r border-border-subtle flex flex-col flex-shrink-0 overflow-hidden">
+        <div className="p-4 border-b border-border-subtle bg-bg-sidebar flex justify-between items-center">
           <h2 className="font-semibold">Messages</h2>
-          <span className="text-xs text-gray-500">{emails.length}</span>
+          <span className="text-xs text-text-muted">{emails.length}</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           {emails.map((email: any) => (
             <Link
               key={email.emailId}
               href={`/?inbox=${selectedInboxId}&email=${email.emailId}`}
-              className={`block p-4 border-b hover:bg-gray-50 transition-colors ${
-                selectedEmailId === email.emailId ? "bg-blue-50 border-l-4 border-l-blue-500" : ""
+              className={`block p-4 border-b border-border-subtle hover:bg-bg-main transition-colors ${
+                selectedEmailId === email.emailId ? "bg-brand-primary/5 border-l-4 border-l-brand-primary" : ""
               }`}
             >
               <div className="flex justify-between items-start mb-1">
-                <span className="text-sm font-bold text-gray-900 truncate flex-1 mr-2">{email.sender}</span>
-                <span className="text-xs text-gray-400 whitespace-nowrap">
+                <span className="text-sm font-bold text-text-main truncate flex-1 mr-2">{email.sender}</span>
+                <span className="text-xs text-text-muted whitespace-nowrap">
                   {new Date(email.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <div className="text-sm text-gray-600 font-medium truncate mb-1">{email.subject}</div>
-              <div className="text-xs text-gray-400 truncate">{email.bodyText?.substring(0, 100)}</div>
+              <div className="text-sm text-text-main font-medium truncate mb-1">{email.subject}</div>
+              <div className="text-xs text-text-muted truncate">{email.bodyText?.substring(0, 100)}</div>
             </Link>
           ))}
           {emails.length === 0 && (
-            <div className="p-8 text-center text-gray-400 text-sm italic">
+            <div className="p-8 text-center text-text-muted text-sm italic">
               No emails caught yet.
             </div>
           )}
@@ -135,42 +139,42 @@ export default async function DashboardPage({
       </div>
 
       {/* Email Content */}
-      <div className="flex-1 flex flex-col bg-white overflow-hidden">
+      <div className="flex-1 flex flex-col bg-bg-card overflow-hidden">
         {selectedEmail ? (
           <div className="flex flex-col h-full">
-            <div className="p-6 border-b">
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">{selectedEmail.subject}</h1>
+            <div className="p-6 border-b border-border-subtle">
+              <h1 className="text-2xl font-bold text-text-main mb-4">{selectedEmail.subject}</h1>
               <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
-                <span className="text-gray-500 flex items-center gap-1"><UserIcon size={14} /> From:</span>
-                <span className="font-medium">{selectedEmail.sender}</span>
-                <span className="text-gray-500 flex items-center gap-1"><Clock size={14} /> Date:</span>
-                <span>{new Date(selectedEmail.createdAt).toLocaleString()}</span>
-                <span className="text-gray-500 flex items-center gap-1"><Tag size={14} /> To:</span>
-                <span>{selectedEmail.recipient}</span>
+                <span className="text-text-muted flex items-center gap-1"><UserIcon size={14} /> From:</span>
+                <span className="font-medium text-text-main">{selectedEmail.sender}</span>
+                <span className="text-text-muted flex items-center gap-1"><Clock size={14} /> Date:</span>
+                <span className="text-text-main">{new Date(selectedEmail.createdAt).toLocaleString()}</span>
+                <span className="text-text-muted flex items-center gap-1"><Tag size={14} /> To:</span>
+                <span className="text-text-main">{selectedEmail.recipient}</span>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 text-text-main">
               {selectedEmail.bodyHtml ? (
                 <div 
-                  className="prose max-w-none"
+                  className="prose prose-slate dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: selectedEmail.bodyHtml }} 
                 />
               ) : (
-                <pre className="whitespace-pre-wrap font-sans text-gray-800">
+                <pre className="whitespace-pre-wrap font-sans text-text-main">
                   {selectedEmail.bodyText}
                 </pre>
               )}
 
               {attachments.length > 0 && (
-                <div className="mt-8 pt-8 border-t">
-                  <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <div className="mt-8 pt-8 border-t border-border-subtle">
+                  <h3 className="text-sm font-bold text-text-main mb-4 flex items-center gap-2">
                     Attachments ({attachments.length})
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {attachments.map((att: any) => (
-                      <div key={att.attachmentId} className="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
-                        <span className="text-sm text-blue-600 font-medium">{att.name}</span>
+                      <div key={att.attachmentId} className="flex items-center gap-2 p-2 border border-border-subtle rounded bg-bg-main hover:bg-bg-sidebar transition-colors cursor-pointer">
+                        <span className="text-sm text-brand-primary font-medium">{att.name}</span>
                       </div>
                     ))}
                   </div>
@@ -179,7 +183,7 @@ export default async function DashboardPage({
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+          <div className="flex-1 flex flex-col items-center justify-center text-text-muted bg-bg-main">
             <Mail size={48} className="mb-4 opacity-20" />
             <p>Select an email to read its content</p>
           </div>
