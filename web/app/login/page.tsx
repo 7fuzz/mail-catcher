@@ -3,8 +3,9 @@
 import { signIn } from 'next-auth/react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ThemeToggle } from '../../components/molecules/ThemeToggle'
-import { Button } from '../../components/atoms/Button'
+import { ThemeToggle } from '@/components/molecules/ThemeToggle'
+import { Button } from '@/components/atoms/Button'
+import { Input } from '@/components/atoms/Input'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -35,27 +36,21 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 bg-bg-card rounded-lg shadow-xl border border-border-subtle">
         <h1 className="text-2xl font-bold mb-6 text-center text-text-main">Mail Catcher Login</h1>
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-text-muted mb-2 text-sm font-medium">Username</label>
-            <input
-              type="text"
-              className="w-full p-2 border border-border-subtle rounded bg-bg-main text-text-main focus:outline-none focus:ring-2 focus:ring-brand-primary"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-text-muted mb-2 text-sm font-medium">Password</label>
-            <input
-              type="password"
-              className="w-full p-2 border border-border-subtle rounded bg-bg-main text-text-main focus:outline-none focus:ring-2 focus:ring-brand-primary"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <Input
+            label="Username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <Input
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
           <Button
             type="submit"
             className="w-full"

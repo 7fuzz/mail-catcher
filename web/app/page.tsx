@@ -1,9 +1,9 @@
-import { auth } from "../auth"
-import prisma from "../lib/db"
+import { auth } from "@/auth"
+import prisma from "@/lib/db"
 import { redirect } from "next/navigation"
 import { Mail, Clock, User as UserIcon, Tag } from "lucide-react"
 import Link from "next/link"
-import { Sidebar } from "../components/organisms/Sidebar"
+import { Sidebar } from "@/components/organisms/Sidebar"
 
 export default async function DashboardPage({
   searchParams,

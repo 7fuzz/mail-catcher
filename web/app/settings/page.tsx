@@ -1,13 +1,13 @@
-import { auth } from "../../auth"
-import prisma from "../../lib/db"
+import { auth } from "@/auth"
+import prisma from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Mail, Shield } from "lucide-react"
 import { revalidatePath } from "next/cache"
-import { Button } from "../../components/atoms/Button"
-import { ThemeToggle } from "../../components/molecules/ThemeToggle"
-import { Card } from "../../components/atoms/Card"
-import { Input } from "../../components/atoms/Input"
+import { Button } from "@/components/atoms/Button"
+import { ThemeToggle } from "@/components/molecules/ThemeToggle"
+import { Card } from "@/components/atoms/Card"
+import { Input } from "@/components/atoms/Input"
 
 export default async function SettingsPage() {
   const session = await auth()
