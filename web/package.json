@@ -12,6 +12,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "dependencies": {
     "@prisma/client": "^6.4.1",
     "@tailwindcss/postcss": "^4.3.0",
@@ -36,6 +39,7 @@
     "postcss": "^8.5.14",
     "prisma": "^6.4.1",
     "tailwindcss": "^4.3.0",
+    "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }
 }
