@@ -1,9 +1,10 @@
 FROM node:20-slim AS base
 
+# Install openssl for Prisma (available in all stages)
+RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies only when needed
 FROM base AS deps
-# Install openssl for Prisma
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -33,6 +34,9 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN groupadd --gid 1001 nodejs
 RUN useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nextjs
+
+# Ensure public folder exists before copying
+RUN mkdir -p public
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
