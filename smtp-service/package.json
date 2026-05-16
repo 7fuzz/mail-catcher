@@ -6,9 +6,12 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "better-sqlite3": "^12.10.0",
+    "@prisma/client": "^7.8.0",
     "mailparser": "^3.7.1",
     "smtp-server": "^3.13.5",
     "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
   }
 }

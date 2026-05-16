@@ -1,16 +1,13 @@
-import Database from 'better-sqlite3';
-import path from 'path';
-import fs from 'fs';
+import { PrismaClient } from '@prisma/client'
 
-const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), '../smtp-service/data/mail-catcher.db');
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
-// Ensure the directory exists (might be redundant if smtp-service starts first)
-const dbDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dbDir)) {
-  fs.mkdirSync(dbDir, { recursive: true });
-}
+export const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log: ['query'],
+  })
 
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export default db;
+export default prisma

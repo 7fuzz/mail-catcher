@@ -1,29 +1,43 @@
 services:
+  db:
+    image: mariadb:latest
+    ports:
+      - "3306:3306"
+    environment:
+      - MARIADB_ROOT_PASSWORD=root
+      - MARIADB_DATABASE=mail_catcher
+    volumes:
+      - mysql-data:/var/lib/mysql
+    restart: always
+
   smtp-service:
     build: ./smtp-service
     ports:
       - "2525:25"
-    volumes:
-      - mail-data:/app/data
+    depends_on:
+      - db
     environment:
-      - DB_PATH=/app/data/mail-catcher.db
+      - DATABASE_URL=mysql://root:root@db:3306/mail_catcher
       - UPLOAD_DIR=/app/data/attachments
+    volumes:
+      - attachments-data:/app/data/attachments
     restart: always
 
   web:
     build: ./web
     ports:
       - "3000:3000"
-    volumes:
-      - mail-data:/app/data
+    depends_on:
+      - db
     environment:
-      - DB_PATH=/app/data/mail-catcher.db
+      - DATABASE_URL=mysql://root:root@db:3306/mail_catcher
       - UPLOAD_DIR=/app/data/attachments
       - AUTH_SECRET=very-secret-key-change-this-in-production
       - NEXTAUTH_URL=http://localhost:3000
-    depends_on:
-      - smtp-service
+    volumes:
+      - attachments-data:/app/data/attachments
     restart: always
 
 volumes:
-  mail-data:
+  mysql-data:
+  attachments-data:

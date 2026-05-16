@@ -1,11 +1,14 @@
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat python3 make g++
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
+
+# Copy schema and generate Prisma client
+COPY prisma/schema.prisma ./prisma/schema.prisma
+RUN npx prisma generate --schema ./prisma/schema.prisma
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -13,21 +16,21 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment variables for build
+# Generate Prisma client again in builder stage to be safe
+RUN npx prisma generate --schema ./prisma/schema.prisma
+
 ENV NEXT_TELEMETRY_DISABLED 1
-# Skip linting/type checking during build for speed in this environment if needed, 
-# but usually good to keep them.
 RUN npm run build
 
-# Production image, copy all the files and run next
+# Production image
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --gid 1001 nodejs
+RUN useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
@@ -35,15 +38,15 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/auth.ts ./auth.ts
 COPY --from=builder /app/lib ./lib
+COPY --from=builder /app/prisma ./prisma
 
-# The database will be in a shared volume
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 USER nextjs
 
 EXPOSE 3000
-
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["npm", "start"]
+# Startup script to ensure DB is updated
+CMD ["sh", "-c", "npx prisma db push --schema ./prisma/schema.prisma && npm start"]

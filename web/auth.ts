@@ -1,6 +1,6 @@
 import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
-import db from "./lib/db"
+import prisma from "./lib/db"
 import bcrypt from "bcryptjs"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -13,15 +13,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null
 
-        const user: any = db.prepare("SELECT * FROM web_users WHERE username = ?").get(credentials.username)
+        const user = await prisma.webUser.findUnique({
+          where: { username: credentials.username as string }
+        })
 
         if (!user) return null
 
-        // In a real app, we'd use bcrypt.compare(credentials.password, user.password_hash)
-        // For the default 'admin' user created by smtp-service, we'll allow plain 'admin' for now
-        // if we didn't hash it there.
-        const isPasswordValid = credentials.password === user.password_hash || 
-                                await bcrypt.compare(credentials.password as string, user.password_hash)
+        const isPasswordValid = credentials.password === user.passwordHash || 
+                                await bcrypt.compare(credentials.password as string, user.passwordHash)
 
         if (!isPasswordValid) return null
 

@@ -1,7 +1,7 @@
 import { auth, signOut } from "@/auth"
-import db from "@/lib/db"
+import prisma from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Mail, Settings, LogOut, User, Inbox, Clock, User as UserIcon, Tag } from "lucide-react"
+import { Mail, Settings, LogOut, Inbox, Clock, User as UserIcon, Tag } from "lucide-react"
 import Link from "next/link"
 
 export default async function DashboardPage({
@@ -18,31 +18,35 @@ export default async function DashboardPage({
   // Fetch accessible inboxes
   let inboxes: any[] = []
   if (userRole === "ADMIN") {
-    inboxes = db.prepare("SELECT * FROM mail_credentials").all()
+    inboxes = await prisma.mailCredential.findMany()
   } else {
-    inboxes = db.prepare(`
-      SELECT mc.* FROM mail_credentials mc
-      JOIN user_inbox_access uia ON mc.credential_id = uia.credential_id
-      WHERE uia.user_id = ?
-    `).all(userId)
+    const access = await prisma.userInboxAccess.findMany({
+      where: { userId },
+      include: { credential: true }
+    })
+    inboxes = access.map(a => a.credential)
   }
 
-  const selectedInboxId = searchParams.inbox || inboxes[0]?.credential_id
-  const selectedInbox = inboxes.find((i) => i.credential_id === selectedInboxId)
+  const selectedInboxId = searchParams.inbox || inboxes[0]?.credentialId
+  const selectedInbox = inboxes.find((i) => i.credentialId === selectedInboxId)
 
   // Fetch emails for the selected inbox
   const emails = selectedInbox
-    ? db.prepare("SELECT * FROM caught_emails WHERE credential_id = ? ORDER BY created_at DESC").all(selectedInboxId)
+    ? await prisma.caughtEmail.findMany({
+        where: { credentialId: selectedInboxId },
+        orderBy: { createdAt: "desc" }
+      })
     : []
 
   const selectedEmailId = searchParams.email
   const selectedEmail = selectedEmailId 
-    ? db.prepare("SELECT * FROM caught_emails WHERE email_id = ?").get(selectedEmailId) as any
+    ? await prisma.caughtEmail.findUnique({
+        where: { emailId: selectedEmailId },
+        include: { attachments: true }
+      })
     : null
 
-  const attachments = selectedEmail
-    ? db.prepare("SELECT * FROM attachments WHERE entity_id = ?").all(selectedEmail.email_id)
-    : []
+  const attachments = selectedEmail?.attachments || []
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
@@ -60,15 +64,15 @@ export default async function DashboardPage({
           <div className="space-y-1">
             {inboxes.map((inbox) => (
               <Link
-                key={inbox.credential_id}
-                href={`/?inbox=${inbox.credential_id}`}
+                key={inbox.credentialId}
+                href={`/?inbox=${inbox.credentialId}`}
                 className={`block p-2 rounded text-sm ${
-                  selectedInboxId === inbox.credential_id
+                  selectedInboxId === inbox.credentialId
                     ? "bg-blue-50 text-blue-700 font-medium"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                {inbox.smtp_user}
+                {inbox.smtpUser}
               </Link>
             ))}
           </div>
@@ -106,20 +110,20 @@ export default async function DashboardPage({
         <div className="flex-1 overflow-y-auto">
           {emails.map((email: any) => (
             <Link
-              key={email.email_id}
-              href={`/?inbox=${selectedInboxId}&email=${email.email_id}`}
+              key={email.emailId}
+              href={`/?inbox=${selectedInboxId}&email=${email.emailId}`}
               className={`block p-4 border-b hover:bg-gray-50 transition-colors ${
-                selectedEmailId === email.email_id ? "bg-blue-50 border-l-4 border-l-blue-500" : ""
+                selectedEmailId === email.emailId ? "bg-blue-50 border-l-4 border-l-blue-500" : ""
               }`}
             >
               <div className="flex justify-between items-start mb-1">
                 <span className="text-sm font-bold text-gray-900 truncate flex-1 mr-2">{email.sender}</span>
                 <span className="text-xs text-gray-400 whitespace-nowrap">
-                  {new Date(email.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(email.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
               <div className="text-sm text-gray-600 font-medium truncate mb-1">{email.subject}</div>
-              <div className="text-xs text-gray-400 truncate">{email.body_text}</div>
+              <div className="text-xs text-gray-400 truncate">{email.bodyText?.substring(0, 100)}</div>
             </Link>
           ))}
           {emails.length === 0 && (
@@ -140,21 +144,21 @@ export default async function DashboardPage({
                 <span className="text-gray-500 flex items-center gap-1"><UserIcon size={14} /> From:</span>
                 <span className="font-medium">{selectedEmail.sender}</span>
                 <span className="text-gray-500 flex items-center gap-1"><Clock size={14} /> Date:</span>
-                <span>{new Date(selectedEmail.created_at).toLocaleString()}</span>
+                <span>{new Date(selectedEmail.createdAt).toLocaleString()}</span>
                 <span className="text-gray-500 flex items-center gap-1"><Tag size={14} /> To:</span>
                 <span>{selectedEmail.recipient}</span>
               </div>
             </div>
             
             <div className="flex-1 overflow-y-auto p-6">
-              {selectedEmail.body_html ? (
+              {selectedEmail.bodyHtml ? (
                 <div 
                   className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }} 
+                  dangerouslySetInnerHTML={{ __html: selectedEmail.bodyHtml }} 
                 />
               ) : (
                 <pre className="whitespace-pre-wrap font-sans text-gray-800">
-                  {selectedEmail.body_text}
+                  {selectedEmail.bodyText}
                 </pre>
               )}
 
@@ -165,7 +169,7 @@ export default async function DashboardPage({
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {attachments.map((att: any) => (
-                      <div key={att.attachment_id} className="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
+                      <div key={att.attachmentId} className="flex items-center gap-2 p-2 border rounded hover:bg-gray-50 cursor-pointer">
                         <span className="text-sm text-blue-600 font-medium">{att.name}</span>
                       </div>
                     ))}

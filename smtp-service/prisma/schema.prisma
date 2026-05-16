@@ -1,0 +1,57 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model WebUser {
+  id            String             @id @default(uuid())
+  username      String             @unique
+  passwordHash  String
+  role          String             @default("VIEWER")
+  inboxAccess   UserInboxAccess[]
+}
+
+model MailCredential {
+  credentialId   String             @id @default(uuid())
+  smtpUser       String             @unique
+  smtpPassword   String
+  maxEmails      Int                @default(100)
+  maxSizeMb      Int                @default(50)
+  emails         CaughtEmail[]
+  userAccess     UserInboxAccess[]
+}
+
+model UserInboxAccess {
+  userId         String
+  credentialId   String
+  user           WebUser            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credential     MailCredential     @relation(fields: [credentialId], references: [credentialId], onDelete: Cascade)
+
+  @@id([userId, credentialId])
+}
+
+model CaughtEmail {
+  emailId        String             @id @default(uuid())
+  credentialId   String
+  sender         String
+  recipient      String
+  subject        String
+  bodyText       String             @db.LongText
+  bodyHtml       String             @db.LongText
+  createdAt      DateTime           @default(now())
+  credential     MailCredential     @relation(fields: [credentialId], references: [credentialId], onDelete: Cascade)
+  attachments    Attachment[]
+}
+
+model Attachment {
+  attachmentId   String             @id @default(uuid())
+  entityType     String
+  entityId       String
+  url            String
+  name           String
+  email          CaughtEmail        @relation(fields: [entityId], references: [emailId], onDelete: Cascade)
+}

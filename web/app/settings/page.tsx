@@ -1,8 +1,8 @@
 import { auth } from "@/auth"
-import db from "@/lib/db"
+import prisma from "@/lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, UserPlus, Mail, Shield } from "lucide-react"
+import { ArrowLeft, Mail, Shield } from "lucide-react"
 import { revalidatePath } from "next/cache"
 
 export default async function SettingsPage() {
@@ -11,17 +11,22 @@ export default async function SettingsPage() {
     redirect("/")
   }
 
-  const credentials = db.prepare("SELECT * FROM mail_credentials").all()
-  const webUsers = db.prepare("SELECT id, username, role FROM web_users").all()
+  const credentials = await prisma.mailCredential.findMany()
+  const webUsers = await prisma.webUser.findMany({
+      select: { id: true, username: true, role: true }
+  })
 
   async function addCredential(formData: FormData) {
     'use server'
     const user = formData.get("user") as string
     const pass = formData.get("pass") as string
-    const { v4: uuidv4 } = require("uuid")
     
-    db.prepare("INSERT INTO mail_credentials (credential_id, smtp_user, smtp_password) VALUES (?, ?, ?)")
-      .run(uuidv4(), user, pass)
+    await prisma.mailCredential.create({
+        data: {
+            smtpUser: user,
+            smtpPassword: pass
+        }
+    })
     
     revalidatePath("/settings")
   }
@@ -54,10 +59,10 @@ export default async function SettingsPage() {
                 </thead>
                 <tbody>
                   {credentials.map((cred: any) => (
-                    <tr key={cred.credential_id} className="border-b last:border-0 text-sm">
-                      <td className="py-2">{cred.smtp_user}</td>
+                    <tr key={cred.credentialId} className="border-b last:border-0 text-sm">
+                      <td className="py-2">{cred.smtpUser}</td>
                       <td className="py-2">••••••••</td>
-                      <td className="py-2">{cred.max_emails} emails / {cred.max_size_mb}MB</td>
+                      <td className="py-2">{cred.maxEmails} emails / {cred.maxSizeMb}MB</td>
                     </tr>
                   ))}
                 </tbody>
