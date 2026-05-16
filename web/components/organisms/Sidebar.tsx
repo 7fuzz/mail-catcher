@@ -6,6 +6,7 @@ import { NavItem } from "../molecules/NavItem"
 import { ThemeToggle } from "../molecules/ThemeToggle"
 import { signOut } from "next-auth/react"
 import { Button } from "../atoms/Button"
+import Link from "next/link"
 
 interface SidebarProps {
   inboxes: any[]
@@ -77,7 +78,7 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
         onMouseDown={startResizing}
       />
 
-      <div className="p-4 border-b border-border-subtle flex items-center justify-between">
+      <div className="p-4 border-b border-border-subtle flex items-center justify-between h-[65px]">
         <div className="flex items-center gap-2 font-bold text-xl text-brand-primary">
           <Mail size={24} />
           <span>Mail Catcher</span>
@@ -85,7 +86,7 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
         <ThemeToggle />
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-4 text-text-main">
         <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2 px-3">
           <Inbox size={14} /> Inboxes
         </h2>
@@ -98,38 +99,41 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
             All Inboxes
           </NavItem>
           <div className="my-2 border-t border-border-subtle/30" />
+          
           {inboxes.map((inbox) => (
-            <div 
+            <Link 
               key={inbox.credentialId} 
-              className={`flex flex-col px-3 py-2 rounded-md transition-colors ${
-                selectedInboxId === inbox.credentialId ? "bg-brand-primary/10" : "hover:bg-bg-main"
+              href={`/?inbox=${inbox.credentialId}`}
+              className={`flex flex-col px-3 py-3 rounded-md transition-colors border border-transparent mb-1 group ${
+                selectedInboxId === inbox.credentialId 
+                  ? "bg-brand-primary/10 border-brand-primary/20 shadow-sm" 
+                  : "hover:bg-bg-main hover:border-border-subtle"
               }`}
             >
-              <NavItem
-                href={`/?inbox=${inbox.credentialId}`}
-                active={selectedInboxId === inbox.credentialId}
-                className="!px-0 !py-0 !bg-transparent font-bold !text-text-main"
-              >
-                {inbox.smtpUser}
-              </NavItem>
+              <div className="flex items-center gap-2 mb-2">
+                <Mail size={14} className={selectedInboxId === inbox.credentialId ? "text-brand-primary" : "text-text-muted group-hover:text-text-main"} />
+                <span className={`text-sm truncate font-semibold ${selectedInboxId === inbox.credentialId ? "text-brand-primary" : "text-text-main"}`}>
+                  {inbox.smtpUser}
+                </span>
+              </div>
               
-              <div className="w-full mt-2">
-                <div className="flex justify-between items-center text-[10px] text-text-muted mb-1">
+              <div className="w-full">
+                <div className="flex justify-between items-center text-[10px] text-text-muted mb-1.5 opacity-80">
                   <span>{inbox.emailCount} / {inbox.maxEmails} mails</span>
                   <span>{inbox.usedSizeMb} / {inbox.maxSizeMb} MB</span>
                 </div>
-                {/* Progress bar */}
-                <div className="w-full bg-border-subtle h-1 rounded-full overflow-hidden">
+                <div className="w-full bg-border-subtle/50 h-1.5 rounded-full overflow-hidden">
                   <div
-                    className={`h-full transition-all ${
+                    className={`h-full transition-all duration-500 ${
                       parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb > 0.9 ? 'bg-red-500' : 'bg-brand-primary'
                     }`}
                     style={{ width: `${Math.min(100, (parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb) * 100)}%` }}
                   />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
+          
           {inboxes.length === 0 && (
             <p className="px-3 text-xs text-text-muted italic">No inboxes found.</p>
           )}

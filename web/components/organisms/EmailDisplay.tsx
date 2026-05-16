@@ -28,7 +28,6 @@ export const EmailDisplay = ({ email, attachments, onDelete }: EmailDisplayProps
     if (iframeRef.current && iframeRef.current.contentWindow) {
       try {
         const height = iframeRef.current.contentWindow.document.documentElement.scrollHeight;
-        // Add a little padding to prevent minor scrollbars
         iframeRef.current.style.height = `${Math.max(height, 600) + 20}px`;
       } catch (e) {
         console.error("Could not resize iframe", e);
@@ -84,6 +83,33 @@ export const EmailDisplay = ({ email, attachments, onDelete }: EmailDisplayProps
       </div>
       
       <div className="flex-1 overflow-auto p-6 bg-bg-main">
+        {/* Attachments at the Top */}
+        {attachments.length > 0 && (
+          <div className="mb-6 pb-6 border-b border-border-subtle mx-auto max-w-4xl">
+            <h3 className="text-sm font-bold text-text-main mb-4 flex items-center gap-2">
+              Attachments ({attachments.length})
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((att: any) => (
+                <a 
+                  key={att.attachmentId} 
+                  href={att.url} 
+                  download={att.name}
+                  className="flex flex-col gap-1 p-3 border border-border-subtle rounded bg-bg-card hover:bg-bg-sidebar hover:border-brand-primary transition-colors cursor-pointer min-w-[150px]"
+                >
+                  <span className="text-sm text-brand-primary font-medium truncate max-w-[200px]" title={att.name}>
+                    {att.name}
+                  </span>
+                  <span className="text-[10px] text-text-muted">
+                    {(att.size / 1024).toFixed(1)} KB
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Email Body */}
         {viewMode === 'original' && email.bodyHtml ? (
           <div className="min-w-full inline-block align-middle">
             <div className="bg-white rounded-lg shadow-sm border border-border-subtle min-w-[650px] overflow-hidden mx-auto max-w-4xl">
@@ -110,31 +136,6 @@ export const EmailDisplay = ({ email, attachments, onDelete }: EmailDisplayProps
                 {email.bodyText}
               </pre>
             )}
-          </div>
-        )}
-
-        {attachments.length > 0 && (
-          <div className="mt-8 pt-8 border-t border-border-subtle mx-auto max-w-4xl">
-            <h3 className="text-sm font-bold text-text-main mb-4 flex items-center gap-2">
-              Attachments ({attachments.length})
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {attachments.map((att: any) => (
-                <a 
-                  key={att.attachmentId} 
-                  href={att.url} 
-                  download={att.name}
-                  className="flex flex-col gap-1 p-3 border border-border-subtle rounded bg-bg-card hover:bg-bg-sidebar hover:border-brand-primary transition-colors cursor-pointer min-w-[150px]"
-                >
-                  <span className="text-sm text-brand-primary font-medium truncate max-w-[200px]" title={att.name}>
-                    {att.name}
-                  </span>
-                  <span className="text-[10px] text-text-muted">
-                    {(att.size / 1024).toFixed(1)} KB
-                  </span>
-                </a>
-              ))}
-            </div>
           </div>
         )}
       </div>
