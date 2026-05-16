@@ -1,9 +1,9 @@
-import { auth, signOut } from "../auth"
+import { auth } from "../auth"
 import prisma from "../lib/db"
 import { redirect } from "next/navigation"
-import { Mail, Settings, LogOut, Inbox, Clock, User as UserIcon, Tag } from "lucide-react"
+import { Mail, Clock, User as UserIcon, Tag } from "lucide-react"
 import Link from "next/link"
-import { ThemeToggle } from "../components/molecules/ThemeToggle"
+import { Sidebar } from "../components/organisms/Sidebar"
 
 export default async function DashboardPage({
   searchParams,
@@ -51,59 +51,12 @@ export default async function DashboardPage({
 
   return (
     <div className="flex h-screen bg-bg-main overflow-hidden text-text-main">
-      {/* Sidebar */}
-      <div className="w-64 bg-bg-sidebar border-r border-border-subtle flex flex-col flex-shrink-0">
-        <div className="p-4 border-b border-border-subtle flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-xl text-brand-primary">
-            <Mail size={24} />
-            <span>Mail Catcher</span>
-          </div>
-          <ThemeToggle />
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-4">
-          <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Inbox size={14} /> Inboxes
-          </h2>
-          <div className="space-y-1">
-            {inboxes.map((inbox) => (
-              <Link
-                key={inbox.credentialId}
-                href={`/?inbox=${inbox.credentialId}`}
-                className={`block p-2 rounded text-sm transition-colors ${
-                  selectedInboxId === inbox.credentialId
-                    ? "bg-brand-primary/10 text-brand-primary font-medium"
-                    : "text-text-muted hover:bg-bg-main hover:text-text-main"
-                }`}
-              >
-                {inbox.smtpUser}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 border-t border-border-subtle space-y-2">
-          {userRole === "ADMIN" && (
-            <Link href="/settings" className="flex items-center gap-2 p-2 text-sm text-text-muted hover:bg-bg-main hover:text-text-main rounded transition-colors">
-              <Settings size={16} />
-              <span>Settings</span>
-            </Link>
-          )}
-          <div className="flex items-center gap-2 p-2 text-sm text-text-muted border-t border-border-subtle/50 pt-4 mt-2">
-            <UserIcon size={16} />
-            <span className="truncate">{session.user?.name}</span>
-          </div>
-          <form action={async () => {
-            'use server'
-            await signOut()
-          }}>
-            <button className="flex items-center gap-2 p-2 text-sm text-red-500 hover:bg-red-500/10 rounded w-full text-left transition-colors">
-              <LogOut size={16} />
-              <span>Logout</span>
-            </button>
-          </form>
-        </div>
-      </div>
+      <Sidebar 
+        inboxes={inboxes} 
+        selectedInboxId={selectedInboxId} 
+        user={session.user} 
+        isAdmin={userRole === "ADMIN"} 
+      />
 
       {/* Email List */}
       <div className="w-96 bg-bg-card border-r border-border-subtle flex flex-col flex-shrink-0 overflow-hidden">

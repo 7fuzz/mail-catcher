@@ -6,6 +6,8 @@ import { ArrowLeft, Mail, Shield } from "lucide-react"
 import { revalidatePath } from "next/cache"
 import { Button } from "../../components/atoms/Button"
 import { ThemeToggle } from "../../components/molecules/ThemeToggle"
+import { Card } from "../../components/atoms/Card"
+import { Input } from "../../components/atoms/Input"
 
 export default async function SettingsPage() {
   const session = await auth()
@@ -48,11 +50,10 @@ export default async function SettingsPage() {
 
         <div className="grid gap-8">
           {/* SMTP Credentials */}
-          <section className="bg-bg-card p-6 rounded-lg shadow-sm border border-border-subtle">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Mail className="text-brand-primary" />
-              SMTP Credentials (Inboxes)
-            </h2>
+          <Card 
+            title="SMTP Credentials (Inboxes)"
+            icon={<Mail className="text-brand-primary" />}
+          >
             <div className="space-y-4">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -75,32 +76,36 @@ export default async function SettingsPage() {
                 </table>
               </div>
 
-              <form action={addCredential} className="mt-4 flex gap-2">
-                <input 
-                  name="user" 
-                  placeholder="SMTP Username" 
-                  className="flex-1 p-2 border border-border-subtle rounded bg-bg-main text-text-main text-sm focus:outline-none focus:ring-1 focus:ring-brand-primary" 
-                  required 
-                />
-                <input 
-                  name="pass" 
-                  placeholder="SMTP Password" 
-                  className="flex-1 p-2 border border-border-subtle rounded bg-bg-main text-text-main text-sm focus:outline-none focus:ring-1 focus:ring-brand-primary" 
-                  required 
-                />
-                <Button size="sm">
+              <form action={addCredential} className="mt-6 flex items-end gap-2">
+                <div className="flex-1">
+                  <Input 
+                    name="user" 
+                    label="SMTP Username"
+                    placeholder="e.g. support" 
+                    required 
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input 
+                    name="pass" 
+                    type="password"
+                    label="SMTP Password"
+                    placeholder="••••••••" 
+                    required 
+                  />
+                </div>
+                <Button className="h-10">
                   Add Inbox
                 </Button>
               </form>
             </div>
-          </section>
+          </Card>
 
           {/* Web Users */}
-          <section className="bg-bg-card p-6 rounded-lg shadow-sm border border-border-subtle">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Shield className="text-green-500" />
-              Web Users
-            </h2>
+          <Card 
+            title="Web Users"
+            icon={<Shield className="text-green-500" />}
+          >
             <div className="space-y-4">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
@@ -130,9 +135,22 @@ export default async function SettingsPage() {
               </div>
               <p className="text-xs text-text-muted italic">User creation via UI is coming soon.</p>
             </div>
-          </section>
+          </Card>
         </div>
       </div>
     </div>
   )
+}
+
+// Helper component to add icon support to Card title (not in atomic yet, just for this page)
+function Card({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) {
+    return (
+        <section className="bg-bg-card p-6 rounded-lg shadow-sm border border-border-subtle">
+            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+              {icon}
+              {title}
+            </h2>
+            {children}
+        </section>
+    )
 }
