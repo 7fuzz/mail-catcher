@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache"
 
 export default async function SettingsPage() {
   const session = await auth()
-  if (!session || (session.user as any).role !== "ADMIN") {
+  if (!session || !session.user || (session.user as any).role !== "ADMIN") {
     redirect("/")
   }
 

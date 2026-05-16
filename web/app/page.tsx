@@ -10,9 +10,9 @@ export default async function DashboardPage({
   searchParams: { inbox?: string; email?: string }
 }) {
   const session = await auth()
-  if (!session) redirect("/login")
+  if (!session || !session.user) redirect("/login")
 
-  const userRole = (session.user as any).role
+  const userRole = (session.user as any).role || "VIEWER"
   const userId = (session.user as any).id
 
   // Fetch accessible inboxes
