@@ -1,27 +1,50 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from '@/components/atoms/Modal'
 import { Input } from '@/components/atoms/Input'
 import { Button } from '@/components/atoms/Button'
 import { Select } from '@/components/atoms/Select'
+import { Badge } from '@/components/atoms/Badge'
+import { Check, X } from 'lucide-react'
 
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (formData: FormData) => Promise<void>;
   initialData?: any;
+  availableInboxes: any[];
 }
 
-export const UserModal = ({ isOpen, onClose, onSubmit, initialData }: UserModalProps) => {
+export const UserModal = ({ isOpen, onClose, onSubmit, initialData, availableInboxes }: UserModalProps) => {
   const [isPending, setIsPending] = useState(false);
+  const [role, setRole] = useState(initialData?.role || 'MAILBOX');
+  const [selectedInboxes, setSelectedInboxes] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (initialData) {
+      setRole(initialData.role);
+      setSelectedInboxes(initialData.inboxAccess?.map((a: any) => a.credentialId) || []);
+    } else {
+      setRole('MAILBOX');
+      setSelectedInboxes([]);
+    }
+  }, [initialData, isOpen]);
 
   async function handleAction(formData: FormData) {
     setIsPending(true);
+    // Append selected inboxes as a JSON string or multiple entries
+    formData.append('inboxIds', JSON.stringify(selectedInboxes));
     await onSubmit(formData);
     setIsPending(false);
     onClose();
   }
+
+  const toggleInbox = (id: string) => {
+    setSelectedInboxes(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
 
   return (
     <Modal 
@@ -49,12 +72,40 @@ export const UserModal = ({ isOpen, onClose, onSubmit, initialData }: UserModalP
         <Select 
           label="Role"
           name="role"
-          defaultValue={initialData?.role || 'VIEWER'}
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
           options={[
-            { label: 'Viewer', value: 'VIEWER' },
-            { label: 'Admin', value: 'ADMIN' }
+            { label: 'Mailbox User (Restricted)', value: 'MAILBOX' },
+            { label: 'System Admin (Full Access)', value: 'ADMIN' }
           ]}
         />
+        
+        {role === 'MAILBOX' && (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-text-muted">Assigned Inboxes</label>
+            <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto border border-border-subtle rounded-md p-2 bg-bg-main/50">
+              {availableInboxes.map(inbox => (
+                <button
+                  key={inbox.credentialId}
+                  type="button"
+                  onClick={() => toggleInbox(inbox.credentialId)}
+                  className={`flex items-center justify-between p-2 rounded text-sm transition-colors ${
+                    selectedInboxes.includes(inbox.credentialId)
+                      ? 'bg-brand-primary/10 text-brand-primary border border-brand-primary/30'
+                      : 'hover:bg-bg-sidebar border border-transparent'
+                  }`}
+                >
+                  <span>{inbox.smtpUser}</span>
+                  {selectedInboxes.includes(inbox.credentialId) ? <Check size={14} /> : <Plus size={14} className="opacity-30" />}
+                </button>
+              ))}
+              {availableInboxes.length === 0 && (
+                <p className="text-xs text-text-muted italic p-2 text-center">No inboxes available to assign.</p>
+              )}
+            </div>
+          </div>
+        )}
+
         <Input 
           label={initialData ? "Change Password (Optional)" : "Password"} 
           name="password" 
