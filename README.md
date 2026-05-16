@@ -46,10 +46,17 @@ The application is built using a microservices-inspired architecture, fully cont
 ## ✨ Key Features
 
 - **Multi-Inbox Management**: Create multiple SMTP credentials, each acting as a separate inbox.
+- **Unified & Individual Views**: Quickly toggle between specific inboxes or view all emails across "All Inboxes" (respecting user permissions).
 - **Role-Based Access (RBAC)**:
     - `ADMIN`: Full system access (manage users, inboxes, and view all mail).
     - `MAILBOX`: Restricted access (only see assigned inboxes).
-- **Inbox Limits**: Configure maximum email count and storage size (MB) per inbox. The SMTP service automatically rotates/prunes old emails when limits are reached.
+- **Search & Pagination**: Quickly find what you need with real-time search (sender, subject, body) and smooth server-side pagination.
+- **Attachment Handling**: View and download attachments directly from the dashboard. Attachment sizes are accurately tracked against inbox storage limits.
+- **Inbox Limits & Cleanup**: Configure maximum email count and storage size (MB) per inbox. The SMTP service automatically rotates/prunes old emails. Includes manual "Delete" and "Clear Inbox" actions.
+- **Advanced Email Rendering**: 
+    - **Themed Mode**: Reads cleanly adapting to the app's Light/Dark mode.
+    - **Original Mode**: Renders the raw HTML inside a secure sandbox iframe to verify pixel-perfect email designs.
+- **Responsive Workspace**: Fully resizable sidebars and an expandable reading pane that persists to your local preferences.
 - **Real-time Theming**: Native Dark/Light mode support with persistent user preference.
 - **Atomic UI**: A clean, consistent interface built with reusable atomic components.
 - **Security**: Password hashing via `bcryptjs` and session management via `Auth.js`.
