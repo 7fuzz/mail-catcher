@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Trash2, UserPlus, Key, Mail, Plus } from "lucide-react"
+import { Trash2, UserPlus, Key, Mail, Plus, Save, Eye, EyeOff } from "lucide-react"
 import { revalidatePath } from "next/cache"
 import { Button } from "@/components/atoms/Button"
 import { Input } from "@/components/atoms/Input"
@@ -24,7 +24,9 @@ export default async function SettingsPage() {
     include: { inboxAccess: { include: { credential: true } } }
   })
 
-  // --- Actions ---
+  // --- Server Actions ---
+
+  // INBOX ACTIONS
   async function addCredential(formData: FormData) {
     'use server'
     await prisma.mailCredential.create({
@@ -41,12 +43,19 @@ export default async function SettingsPage() {
   async function updateCredential(formData: FormData) {
     'use server'
     const id = formData.get("id") as string
+    const data: any = {
+        smtpUser: formData.get("user") as string,
+        maxEmails: parseInt(formData.get("maxEmails") as string),
+        maxSizeMb: parseInt(formData.get("maxSizeMb") as string)
+    }
+    const newPass = formData.get("pass") as string
+    if (newPass && newPass !== "********") {
+        data.smtpPassword = newPass
+    }
+
     await prisma.mailCredential.update({
         where: { credentialId: id },
-        data: {
-            maxEmails: parseInt(formData.get("maxEmails") as string),
-            maxSizeMb: parseInt(formData.get("maxSizeMb") as string)
-        }
+        data
     })
     revalidatePath("/settings")
   }
@@ -57,6 +66,7 @@ export default async function SettingsPage() {
     revalidatePath("/settings")
   }
 
+  // USER ACTIONS
   async function addWebUser(formData: FormData) {
     'use server'
     const password = formData.get("password") as string
@@ -71,6 +81,25 @@ export default async function SettingsPage() {
     revalidatePath("/settings")
   }
 
+  async function updateWebUser(formData: FormData) {
+    'use server'
+    const id = formData.get("id") as string
+    const username = formData.get("username") as string
+    const role = formData.get("role") as string
+    const newPass = formData.get("password") as string
+
+    const data: any = { username, role }
+    if (newPass) {
+        data.passwordHash = await bcrypt.hash(newPass, 10)
+    }
+
+    await prisma.webUser.update({
+        where: { id },
+        data
+    })
+    revalidatePath("/settings")
+  }
+
   async function deleteWebUser(formData: FormData) {
     'use server'
     const id = formData.get("id") as string
@@ -79,6 +108,7 @@ export default async function SettingsPage() {
     revalidatePath("/settings")
   }
 
+  // ACCESS ACTIONS
   async function grantAccess(formData: FormData) {
     'use server'
     await prisma.userInboxAccess.upsert({
@@ -110,78 +140,90 @@ export default async function SettingsPage() {
 
   const InboxSection = (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Manage Inboxes</h3>
-      </div>
+      <h3 className="text-lg font-semibold">SMTP Inboxes</h3>
+      
+      {/* Hidden Forms for Row Updates */}
+      {credentials.map(cred => (
+        <form key={`form-update-${cred.credentialId}`} id={`form-update-${cred.credentialId}`} action={updateCredential}>
+            <input type="hidden" name="id" value={cred.credentialId} />
+        </form>
+      ))}
+      <form id="form-add-inbox" action={addCredential}></form>
+
       <Table>
         <THead>
           <TR>
-            <TH>SMTP User</TH>
-            <TH>Emails (Current/Max)</TH>
-            <TH>Storage Limit</TH>
+            <TH>User</TH>
+            <TH>Password</TH>
+            <TH>Max Count</TH>
+            <TH>Max Size (MB)</TH>
             <TH className="text-right">Actions</TH>
           </TR>
         </THead>
         <TBody>
           {credentials.map((cred) => (
             <TR key={cred.credentialId}>
-              <TD className="font-medium">{cred.smtpUser}</TD>
               <TD>
-                <form action={updateCredential} className="flex items-center gap-2">
-                  <input type="hidden" name="id" value={cred.credentialId} />
-                  <span className="text-xs text-text-muted">{cred._count.emails} /</span>
-                  <input 
-                    name="maxEmails" 
-                    type="number" 
-                    defaultValue={cred.maxEmails} 
-                    className="w-20 bg-bg-main border border-border-subtle rounded px-2 py-1 text-xs focus:ring-1 focus:ring-brand-primary outline-none"
-                  />
-                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Save limits">
-                    <Plus size={12} />
-                  </Button>
-                </form>
+                <input 
+                    name="user" 
+                    form={`form-update-${cred.credentialId}`}
+                    defaultValue={cred.smtpUser} 
+                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium"
+                />
+              </TD>
+              <TD>
+                <input 
+                    name="pass" 
+                    type="password"
+                    form={`form-update-${cred.credentialId}`}
+                    defaultValue="********" 
+                    className="w-full bg-transparent border-none focus:ring-0 text-sm text-text-muted"
+                />
               </TD>
               <TD>
                 <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-text-muted whitespace-nowrap">{cred._count.emails} /</span>
                     <input 
-                        name="maxSizeMb" 
-                        form={`update-${cred.credentialId}`}
+                        name="maxEmails" 
                         type="number" 
-                        defaultValue={cred.maxSizeMb} 
+                        form={`form-update-${cred.credentialId}`}
+                        defaultValue={cred.maxEmails} 
                         className="w-16 bg-bg-main border border-border-subtle rounded px-2 py-1 text-xs focus:ring-1 focus:ring-brand-primary outline-none"
                     />
-                    <span className="text-xs text-text-muted">MB</span>
                 </div>
-                {/* Hidden form for the combined storage/email update */}
-                <form id={`update-${cred.credentialId}`} action={updateCredential}>
-                    <input type="hidden" name="id" value={cred.credentialId} />
-                    <input type="hidden" name="maxEmails" defaultValue={cred.maxEmails} />
-                </form>
+              </TD>
+              <TD>
+                <input 
+                    name="maxSizeMb" 
+                    type="number" 
+                    form={`form-update-${cred.credentialId}`}
+                    defaultValue={cred.maxSizeMb} 
+                    className="w-16 bg-bg-main border border-border-subtle rounded px-2 py-1 text-xs focus:ring-1 focus:ring-brand-primary outline-none"
+                />
               </TD>
               <TD className="text-right">
-                <form action={deleteCredential}>
-                  <input type="hidden" name="id" value={cred.credentialId} />
-                  <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-500/10">
-                    <Trash2 size={14} />
-                  </Button>
-                </form>
+                <div className="flex justify-end gap-1">
+                    <Button form={`form-update-${cred.credentialId}`} variant="ghost" size="sm" className="text-brand-primary">
+                        <Save size={14} />
+                    </Button>
+                    <form action={deleteCredential}>
+                        <input type="hidden" name="id" value={cred.credentialId} />
+                        <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-500/10">
+                            <Trash2 size={14} />
+                        </Button>
+                    </form>
+                </div>
               </TD>
             </TR>
           ))}
           <TR className="bg-bg-sidebar/30">
-            <form action={addCredential}>
-              <TD><Input name="user" placeholder="New SMTP User" className="h-8 text-xs" required /></TD>
-              <TD><Input name="pass" type="password" placeholder="Password" className="h-8 text-xs" required /></TD>
-              <TD>
-                <div className="flex gap-2">
-                  <Input name="maxEmails" type="number" placeholder="Count" className="h-8 text-xs" />
-                  <Input name="maxSizeMb" type="number" placeholder="MB" className="h-8 text-xs" />
-                </div>
-              </TD>
+              <TD><Input name="user" form="form-add-inbox" placeholder="User" className="h-8 text-xs" required /></TD>
+              <TD><Input name="pass" form="form-add-inbox" type="password" placeholder="Pass" className="h-8 text-xs" required /></TD>
+              <TD><Input name="maxEmails" form="form-add-inbox" type="number" placeholder="100" className="h-8 text-xs" /></TD>
+              <TD><Input name="maxSizeMb" form="form-add-inbox" type="number" placeholder="50" className="h-8 text-xs" /></TD>
               <TD className="text-right">
-                <Button size="sm" className="h-8">Add</Button>
+                <Button form="form-add-inbox" size="sm" className="h-8">Add</Button>
               </TD>
-            </form>
           </TR>
         </TBody>
       </Table>
@@ -190,47 +232,80 @@ export default async function SettingsPage() {
 
   const UserSection = (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Web Access Users</h3>
+      <h3 className="text-lg font-semibold">Web Users</h3>
+      
+      {/* Hidden Forms */}
+      {webUsers.map(user => (
+        <form key={`form-user-${user.id}`} id={`form-user-${user.id}`} action={updateWebUser}>
+            <input type="hidden" name="id" value={user.id} />
+        </form>
+      ))}
+      <form id="form-add-user" action={addWebUser}></form>
+
       <Table>
         <THead>
           <TR>
             <TH>Username</TH>
             <TH>Role</TH>
+            <TH>New Password (Optional)</TH>
             <TH className="text-right">Actions</TH>
           </TR>
         </THead>
         <TBody>
           {webUsers.map((user) => (
             <TR key={user.id}>
-              <TD className="font-medium">{user.username}</TD>
               <TD>
-                <Badge variant={user.role === 'ADMIN' ? 'info' : 'default'}>{user.role}</Badge>
+                <input 
+                    name="username" 
+                    form={`form-user-${user.id}`}
+                    defaultValue={user.username} 
+                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium"
+                />
+              </TD>
+              <TD>
+                <Select 
+                    name="role" 
+                    form={`form-user-${user.id}`}
+                    defaultValue={user.role}
+                    className="h-8 py-0 text-xs w-28" 
+                    options={[{label: 'Viewer', value: 'VIEWER'}, {label: 'Admin', value: 'ADMIN'}]} 
+                />
+              </TD>
+              <TD>
+                <input 
+                    name="password" 
+                    type="password"
+                    form={`form-user-${user.id}`}
+                    placeholder="Update password..."
+                    className="w-full bg-transparent border-none focus:ring-0 text-xs text-text-muted italic"
+                />
               </TD>
               <TD className="text-right">
-                {user.id !== (session?.user as any).id && (
-                  <form action={deleteWebUser}>
-                    <input type="hidden" name="id" value={user.id} />
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-500/10">
-                      <Trash2 size={14} />
+                <div className="flex justify-end gap-1">
+                    <Button form={`form-user-${user.id}`} variant="ghost" size="sm" className="text-brand-primary">
+                        <Save size={14} />
                     </Button>
-                  </form>
-                )}
+                    {user.id !== (session?.user as any).id && (
+                    <form action={deleteWebUser}>
+                        <input type="hidden" name="id" value={user.id} />
+                        <Button variant="ghost" size="sm" className="text-red-500 hover:bg-red-500/10">
+                        <Trash2 size={14} />
+                        </Button>
+                    </form>
+                    )}
+                </div>
               </TD>
             </TR>
           ))}
           <TR className="bg-bg-sidebar/30">
-            <form action={addWebUser}>
-              <TD><Input name="username" placeholder="New Username" className="h-8 text-xs" required /></TD>
+              <TD><Input name="username" form="form-add-user" placeholder="Username" className="h-8 text-xs" required /></TD>
               <TD>
-                <div className="flex gap-2">
-                    <Input name="password" type="password" placeholder="Password" className="h-8 text-xs" required />
-                    <Select name="role" className="h-8 py-0 text-xs" options={[{label: 'Viewer', value: 'VIEWER'}, {label: 'Admin', value: 'ADMIN'}]} />
-                </div>
+                 <Select name="role" form="form-add-user" className="h-8 py-0 text-xs w-28" options={[{label: 'Viewer', value: 'VIEWER'}, {label: 'Admin', value: 'ADMIN'}]} />
               </TD>
+              <TD><Input name="password" form="form-add-user" type="password" placeholder="Password" className="h-8 text-xs" required /></TD>
               <TD className="text-right">
-                <Button size="sm" className="h-8">Create</Button>
+                <Button form="form-add-user" size="sm" className="h-8">Create</Button>
               </TD>
-            </form>
           </TR>
         </TBody>
       </Table>
@@ -256,12 +331,12 @@ export default async function SettingsPage() {
                             <TD>
                                 <div className="flex flex-wrap gap-2">
                                     {user.inboxAccess.map(acc => (
-                                        <form key={acc.credentialId} action={revokeAccess}>
+                                        <form key={`${user.id}-${acc.credentialId}`} action={revokeAccess}>
                                             <input type="hidden" name="userId" value={user.id} />
                                             <input type="hidden" name="credentialId" value={acc.credentialId} />
                                             <Badge variant="info" className="gap-1 pr-1 group">
                                                 {acc.credential.smtpUser}
-                                                <button type="submit" className="hover:text-red-500 transition-colors">
+                                                <button type="submit" className="hover:text-red-500 transition-colors cursor-pointer">
                                                     <Trash2 size={10} />
                                                 </button>
                                             </Badge>
@@ -275,7 +350,7 @@ export default async function SettingsPage() {
                 </TBody>
             </Table>
         </div>
-        <div className="bg-bg-card border border-border-subtle p-6 rounded-lg h-fit space-y-4">
+        <div className="bg-bg-card border border-border-subtle p-6 rounded-lg h-fit space-y-4 shadow-sm">
             <h4 className="text-sm font-bold flex items-center gap-2 text-brand-primary">
                 <Plus size={16} /> Grant New Access
             </h4>
