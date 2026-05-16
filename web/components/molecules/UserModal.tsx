@@ -6,7 +6,7 @@ import { Input } from '@/components/atoms/Input'
 import { Button } from '@/components/atoms/Button'
 import { Select } from '@/components/atoms/Select'
 import { Badge } from '@/components/atoms/Badge'
-import { Check, X } from 'lucide-react'
+import { Check, X, Plus } from 'lucide-react'
 
 interface UserModalProps {
   isOpen: boolean;

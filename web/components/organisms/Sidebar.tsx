@@ -29,14 +29,39 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
           <Inbox size={14} /> Inboxes
         </h2>
         <nav className="space-y-1">
+          <NavItem 
+            href="/?inbox=all"
+            active={selectedInboxId === 'all'}
+            icon={<Mail size={16} />}
+          >
+            All Inboxes
+          </NavItem>
+          <div className="my-2 border-t border-border-subtle/30" />
           {inboxes.map((inbox) => (
-            <NavItem 
-              key={inbox.credentialId}
-              href={`/?inbox=${inbox.credentialId}`}
-              active={selectedInboxId === inbox.credentialId}
-            >
-              {inbox.smtpUser}
-            </NavItem>
+            <div key={inbox.credentialId} className="flex flex-col gap-1 px-3 py-2 rounded-md transition-colors group">
+              <NavItem 
+                href={`/?inbox=${inbox.credentialId}`}
+                active={selectedInboxId === inbox.credentialId}
+                className="!px-0 !py-0 hover:bg-transparent"
+              >
+                <div className="flex flex-col w-full">
+                  <span className="truncate">{inbox.smtpUser}</span>
+                  <div className="flex justify-between items-center text-[10px] text-text-muted mt-1">
+                    <span>{inbox.emailCount} / {inbox.maxEmails} mails</span>
+                    <span>{inbox.usedSizeMb} / {inbox.maxSizeMb} MB</span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full bg-border-subtle h-1 rounded-full mt-1 overflow-hidden">
+                    <div 
+                      className={`h-full transition-all ${
+                        parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb > 0.9 ? 'bg-red-500' : 'bg-brand-primary'
+                      }`}
+                      style={{ width: `${Math.min(100, (parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb) * 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </NavItem>
+            </div>
           ))}
           {inboxes.length === 0 && (
             <p className="px-3 text-xs text-text-muted italic">No inboxes found.</p>

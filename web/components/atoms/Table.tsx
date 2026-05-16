@@ -21,8 +21,12 @@ export const TBody = ({ children }: { children: React.ReactNode }) => (
   </tbody>
 );
 
-export const TH = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <th className={cn("px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider", className)}>
+export const TH = ({ children, className, colSpan, rowSpan }: { children: React.ReactNode; className?: string; colSpan?: number; rowSpan?: number }) => (
+  <th 
+    colSpan={colSpan} 
+    rowSpan={rowSpan}
+    className={cn("px-6 py-4 text-xs font-semibold text-text-muted uppercase tracking-wider", className)}
+  >
     {children}
   </th>
 );
@@ -33,8 +37,12 @@ export const TR = ({ children, className }: { children: React.ReactNode; classNa
   </tr>
 );
 
-export const TD = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <td className={cn("px-6 py-4 text-sm text-text-main", className)}>
+export const TD = ({ children, className, colSpan, rowSpan }: { children: React.ReactNode; className?: string; colSpan?: number; rowSpan?: number }) => (
+  <td 
+    colSpan={colSpan} 
+    rowSpan={rowSpan}
+    className={cn("px-6 py-4 text-sm text-text-main", className)}
+  >
     {children}
   </td>
 );

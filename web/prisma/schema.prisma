@@ -54,5 +54,6 @@ model Attachment {
   entityId       String
   url            String
   name           String
+  size           Int                @default(0)
   email          CaughtEmail        @relation(fields: [entityId], references: [emailId], onDelete: Cascade)
 }

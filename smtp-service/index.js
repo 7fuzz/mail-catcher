@@ -145,6 +145,7 @@ async function saveEmail(credential, parsed, envelope) {
           entityId: email.emailId,
           url: publicUrl,
           name: attachment.filename || "unnamed",
+          size: attachment.content.length,
         },
       });
     }
@@ -176,7 +177,7 @@ async function rotateEmails(credential) {
     console.log(`Rotated ${toDelete.length} emails (count limit reached)`);
   }
 
-  // 2. Check Size Limit (Rough estimate via attachments)
+  // 2. Check Size Limit (Precise via DB)
   const attachments = await prisma.attachment.findMany({
     where: {
       email: {
@@ -184,19 +185,16 @@ async function rotateEmails(credential) {
       },
       entityType: "EMAIL",
     },
-    include: {
-        email: true
-    }
   });
 
-  let totalBytes = 0;
-  for (const att of attachments) {
-    const fileName = path.basename(att.url);
-    const filePath = path.join(UPLOAD_DIR, fileName);
-    if (fs.existsSync(filePath)) {
-      totalBytes += fs.statSync(filePath).size;
-    }
-  }
+  let totalBytes = attachments.reduce((sum, a) => sum + a.size, 0);
+  
+  // Add body sizes (approximate: 1 char = 1 byte for most cases)
+  const allEmails = await prisma.caughtEmail.findMany({
+    where: { credentialId },
+    select: { bodyText: true, bodyHtml: true }
+  });
+  totalBytes += allEmails.reduce((sum, e) => sum + (e.bodyText?.length || 0) + (e.bodyHtml?.length || 0), 0);
 
   const maxBytes = maxSizeMb * 1024 * 1024;
   if (totalBytes > maxBytes) {
@@ -204,20 +202,17 @@ async function rotateEmails(credential) {
     const oldestEmails = await prisma.caughtEmail.findMany({
       where: { credentialId },
       orderBy: { createdAt: "asc" },
+      include: { attachments: true }
     });
 
     for (const email of oldestEmails) {
       if (totalBytes <= maxBytes) break;
 
-      const emailAtts = attachments.filter((a) => a.entityId === email.emailId);
-      for (const ea of emailAtts) {
-        const fileName = path.basename(ea.url);
-        const filePath = path.join(UPLOAD_DIR, fileName);
-        if (fs.existsSync(filePath)) {
-          totalBytes -= fs.statSync(filePath).size;
-        }
-      }
+      const emailSize = (email.bodyText?.length || 0) + (email.bodyHtml?.length || 0) + 
+                        email.attachments.reduce((sum, a) => sum + a.size, 0);
+      
       await deleteEmailFull(email.emailId);
+      totalBytes -= emailSize;
     }
   }
 }
