@@ -1,11 +1,10 @@
 import { auth } from "@/auth"
 import prisma from "@/lib/db"
 import { redirect } from "next/navigation"
-import { Mail, Clock, User as UserIcon, Tag } from "lucide-react"
-import Link from "next/link"
 import { Sidebar } from "@/components/organisms/Sidebar"
 import { EmailListControls } from "@/components/molecules/EmailListControls"
 import { EmailDisplay } from "@/components/organisms/EmailDisplay"
+import { DashboardClient } from "@/components/templates/DashboardClient"
 import { revalidatePath } from "next/cache"
 import fs from 'fs'
 import path from 'path'
@@ -52,8 +51,20 @@ export default async function DashboardPage({
     'use server'
     const inboxId = formData.get("inboxId") as string
     
+    // Fetch accessible inboxes to build the where clause
+    let accessibleInboxes: any[] = []
+    if (userRole === "ADMIN") {
+        accessibleInboxes = await prisma.mailCredential.findMany()
+    } else {
+        const access = await prisma.userInboxAccess.findMany({
+            where: { userId },
+            include: { credential: true }
+        })
+        accessibleInboxes = access.map(a => a.credential)
+    }
+
     const where = inboxId === 'all' 
-      ? (userRole === 'ADMIN' ? {} : { credentialId: { in: inboxes.map(i => i.credentialId) } })
+      ? (userRole === 'ADMIN' ? {} : { credentialId: { in: accessibleInboxes.map(i => i.credentialId) } })
       : { credentialId: inboxId }
 
     const emails = await prisma.caughtEmail.findMany({
@@ -81,6 +92,7 @@ export default async function DashboardPage({
       include: {
         emails: {
           select: {
+            credentialId: true,
             bodyText: true,
             bodyHtml: true,
             attachments: { select: { size: true } }
@@ -96,6 +108,7 @@ export default async function DashboardPage({
           include: {
             emails: {
               select: {
+                credentialId: true,
                 bodyText: true,
                 bodyHtml: true,
                 attachments: { select: { size: true } }
@@ -181,83 +194,22 @@ export default async function DashboardPage({
   const attachments = selectedEmail?.attachments || []
 
   return (
-    <div className="flex h-screen bg-bg-main overflow-hidden text-text-main">
-      <Sidebar 
-        inboxes={inboxes} 
-        selectedInboxId={selectedInboxId} 
-        user={session.user} 
-        isAdmin={userRole === "ADMIN"} 
-      />
-
-      {/* Email List */}
-      <div className="w-96 bg-bg-card border-r border-border-subtle flex flex-col flex-shrink-0 overflow-hidden">
-        <div className="p-4 border-b border-border-subtle bg-bg-sidebar flex justify-between items-center">
-          <h2 className="font-semibold text-brand-primary">{isAllInboxes ? 'All Inboxes' : 'Messages'}</h2>
-          <span className="text-xs text-text-muted">{totalEmails} total</span>
-        </div>
-        
-        <EmailListControls 
-          totalPages={totalPages} 
-          currentPage={currentPage} 
-          onClearInbox={clearInbox}
-          selectedInboxId={selectedInboxId as string}
-        />
-
-        <div className="flex-1 overflow-y-auto">
-          {emails.map((email: any) => {
-            const currentParams = new URLSearchParams()
-            if (selectedInboxId) currentParams.set('inbox', selectedInboxId)
-            currentParams.set('email', email.emailId)
-            if (searchTerm) currentParams.set('search', searchTerm)
-            if (currentPage > 1) currentParams.set('page', currentPage.toString())
-
-            return (
-              <Link
-                key={email.emailId}
-                href={`/?${currentParams.toString()}`}
-                className={`block p-4 border-b border-border-subtle hover:bg-bg-main transition-colors ${
-                  selectedEmailId === email.emailId ? "bg-brand-primary/5 border-l-4 border-l-brand-primary" : ""
-                }`}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <span className="text-sm font-bold text-text-main truncate flex-1 mr-2">{email.sender}</span>
-                  <span className="text-xs text-text-muted whitespace-nowrap">
-                    {new Date(email.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-                <div className="text-sm text-text-main font-medium truncate mb-1">{email.subject}</div>
-                <div className="text-xs text-text-muted truncate line-clamp-2">{email.bodyText?.substring(0, 100)}</div>
-                {isAllInboxes && (
-                  <div className="mt-2 text-[10px] text-brand-primary/70 font-medium uppercase tracking-tighter">
-                    Inbox: {inboxes.find(i => i.credentialId === email.credentialId)?.smtpUser || 'Unknown'}
-                  </div>
-                )}
-              </Link>
-            )
-          })}
-          {emails.length === 0 && (
-            <div className="p-8 text-center text-text-muted text-sm italic">
-              {searchTerm ? "No emails match your search." : "No emails caught yet."}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Email Content */}
-      <div className="flex-1 flex flex-col bg-bg-card overflow-hidden">
-        {selectedEmail ? (
-          <EmailDisplay 
-            email={selectedEmail} 
-            attachments={attachments} 
-            onDelete={deleteEmail}
-          />
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-text-muted bg-bg-main">
-            <Mail size={48} className="mb-4 opacity-20" />
-            <p>Select an email to read its content</p>
-          </div>
-        )}
-      </div>
-    </div>
+    <DashboardClient 
+      inboxes={inboxes}
+      selectedInboxId={selectedInboxId as string}
+      user={session.user}
+      isAdmin={userRole === "ADMIN"}
+      totalEmails={totalEmails}
+      isAllInboxes={isAllInboxes}
+      emails={emails}
+      selectedEmailId={selectedEmailId}
+      selectedEmail={selectedEmail}
+      attachments={attachments}
+      searchTerm={searchTerm}
+      currentPage={currentPage}
+      totalPages={totalPages}
+      onClearInbox={clearInbox}
+      onDeleteEmail={deleteEmail}
+    />
   )
 }

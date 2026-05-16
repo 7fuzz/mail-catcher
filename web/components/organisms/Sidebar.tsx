@@ -1,5 +1,6 @@
 'use client'
 
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Mail, Inbox, Settings, LogOut, User as UserIcon } from "lucide-react"
 import { NavItem } from "../molecules/NavItem"
 import { ThemeToggle } from "../molecules/ThemeToggle"
@@ -14,8 +15,68 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProps) => {
+  const [width, setWidth] = useState(256) // Default 16rem (w-64)
+  const [isResizing, setIsResizing] = useState(false)
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
+  // Load saved width
+  useEffect(() => {
+    const savedWidth = localStorage.getItem('sidebar-width')
+    if (savedWidth) {
+      setWidth(parseInt(savedWidth, 10))
+    }
+  }, [])
+
+  const startResizing = useCallback((mouseDownEvent: React.MouseEvent) => {
+    setIsResizing(true)
+  }, [])
+
+  const stopResizing = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  const resize = useCallback(
+    (mouseMoveEvent: MouseEvent) => {
+      if (isResizing) {
+        const newWidth = mouseMoveEvent.clientX
+        if (newWidth >= 200 && newWidth <= 480) { // Constraints
+          setWidth(newWidth)
+        }
+      }
+    },
+    [isResizing]
+  )
+
+  useEffect(() => {
+    window.addEventListener("mousemove", resize)
+    window.addEventListener("mouseup", stopResizing)
+    return () => {
+      window.removeEventListener("mousemove", resize)
+      window.removeEventListener("mouseup", stopResizing)
+    }
+  }, [resize, stopResizing])
+
+  // Save width when it changes
+  useEffect(() => {
+    if (width !== 256) {
+      localStorage.setItem('sidebar-width', width.toString())
+    }
+  }, [width])
+
   return (
-    <aside className="w-64 bg-bg-sidebar border-r border-border-subtle flex flex-col flex-shrink-0 h-full">
+    <aside 
+      ref={sidebarRef}
+      style={{ width: `${width}px` }}
+      className="bg-bg-sidebar border-r border-border-subtle flex flex-col flex-shrink-0 h-full relative"
+    >
+      {/* Resize Handle */}
+      <div 
+        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-50 ${
+          isResizing ? 'bg-brand-primary w-1' : ''
+        }`}
+        onMouseDown={startResizing}
+      />
+
       <div className="p-4 border-b border-border-subtle flex items-center justify-between">
         <div className="flex items-center gap-2 font-bold text-xl text-brand-primary">
           <Mail size={24} />
