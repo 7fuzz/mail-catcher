@@ -141,16 +141,3 @@ export default async function SettingsPage() {
     </div>
   )
 }
-
-// Helper component to add icon support to Card title (not in atomic yet, just for this page)
-function Card({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) {
-    return (
-        <section className="bg-bg-card p-6 rounded-lg shadow-sm border border-border-subtle">
-            <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-              {icon}
-              {title}
-            </h2>
-            {children}
-        </section>
-    )
-}
