@@ -19,6 +19,7 @@ model MailCredential {
   credentialId   String             @id @default(uuid())
   smtpUser       String             @unique
   smtpPassword   String
+  isActive       Boolean            @default(true)
   maxEmails      Int                @default(100)
   maxSizeMb      Int                @default(50)
   emails         CaughtEmail[]

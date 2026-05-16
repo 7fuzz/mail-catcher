@@ -54,6 +54,10 @@ const server = new SMTPServer({
       });
 
       if (credential && credential.smtpPassword === auth.password) {
+        if (!credential.isActive) {
+          callback(new Error("This inbox is currently disabled"));
+          return;
+        }
         callback(null, { user: credential });
       } else {
         callback(new Error("Invalid username or password"));
