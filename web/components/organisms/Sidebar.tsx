@@ -23,13 +23,13 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
         </div>
         <ThemeToggle />
       </div>
-      
+
       <div className="flex-1 overflow-y-auto p-4">
         <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-4 flex items-center gap-2 px-3">
           <Inbox size={14} /> Inboxes
         </h2>
         <nav className="space-y-1">
-          <NavItem 
+          <NavItem
             href="/?inbox=all"
             active={selectedInboxId === 'all'}
             icon={<Mail size={16} />}
@@ -38,29 +38,35 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
           </NavItem>
           <div className="my-2 border-t border-border-subtle/30" />
           {inboxes.map((inbox) => (
-            <div key={inbox.credentialId} className="flex flex-col gap-1 px-3 py-2 rounded-md transition-colors group">
-              <NavItem 
+            <div 
+              key={inbox.credentialId} 
+              className={`flex flex-col px-3 py-2 rounded-md transition-colors ${
+                selectedInboxId === inbox.credentialId ? "bg-brand-primary/10" : "hover:bg-bg-main"
+              }`}
+            >
+              <NavItem
                 href={`/?inbox=${inbox.credentialId}`}
                 active={selectedInboxId === inbox.credentialId}
-                className="!px-0 !py-0 hover:bg-transparent"
+                className="!px-0 !py-0 !bg-transparent font-bold !text-text-main"
               >
-                <div className="flex flex-col w-full">
-                  <span className="truncate">{inbox.smtpUser}</span>
-                  <div className="flex justify-between items-center text-[10px] text-text-muted mt-1">
-                    <span>{inbox.emailCount} / {inbox.maxEmails} mails</span>
-                    <span>{inbox.usedSizeMb} / {inbox.maxSizeMb} MB</span>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="w-full bg-border-subtle h-1 rounded-full mt-1 overflow-hidden">
-                    <div 
-                      className={`h-full transition-all ${
-                        parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb > 0.9 ? 'bg-red-500' : 'bg-brand-primary'
-                      }`}
-                      style={{ width: `${Math.min(100, (parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb) * 100)}%` }}
-                    />
-                  </div>
-                </div>
+                {inbox.smtpUser}
               </NavItem>
+              
+              <div className="w-full mt-2">
+                <div className="flex justify-between items-center text-[10px] text-text-muted mb-1">
+                  <span>{inbox.emailCount} / {inbox.maxEmails} mails</span>
+                  <span>{inbox.usedSizeMb} / {inbox.maxSizeMb} MB</span>
+                </div>
+                {/* Progress bar */}
+                <div className="w-full bg-border-subtle h-1 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all ${
+                      parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb > 0.9 ? 'bg-red-500' : 'bg-brand-primary'
+                    }`}
+                    style={{ width: `${Math.min(100, (parseFloat(inbox.usedSizeMb) / inbox.maxSizeMb) * 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
           ))}
           {inboxes.length === 0 && (
@@ -79,9 +85,9 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
           <UserIcon size={16} />
           <span className="truncate">{user?.name}</span>
         </div>
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           className="w-full justify-start gap-3 text-red-500 hover:bg-red-500/10 hover:text-red-500"
           onClick={() => signOut()}
         >
