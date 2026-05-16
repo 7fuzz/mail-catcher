@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  smtp-service:
+    build: ./smtp-service
+    ports:
+      - "2525:25"
+    volumes:
+      - mail-data:/app/data
+    environment:
+      - DB_PATH=/app/data/mail-catcher.db
+      - UPLOAD_DIR=/app/data/attachments
+    restart: always
+
+  web:
+    build: ./web
+    ports:
+      - "3000:3000"
+    volumes:
+      - mail-data:/app/data
+    environment:
+      - DB_PATH=/app/data/mail-catcher.db
+      - UPLOAD_DIR=/app/data/attachments
+      - AUTH_SECRET=very-secret-key-change-this-in-production
+      - NEXTAUTH_URL=http://localhost:3000
+    depends_on:
+      - smtp-service
+    restart: always
+
+volumes:
+  mail-data:
