@@ -1,5 +1,5 @@
-import { auth, signOut } from "@/auth"
-import prisma from "@/lib/db"
+import { auth, signOut } from "../auth"
+import prisma from "../lib/db"
 import { redirect } from "next/navigation"
 import { Mail, Settings, LogOut, Inbox, Clock, User as UserIcon, Tag } from "lucide-react"
 import Link from "next/link"

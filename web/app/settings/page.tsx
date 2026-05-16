@@ -1,5 +1,5 @@
-import { auth } from "@/auth"
-import prisma from "@/lib/db"
+import { auth } from "../../auth"
+import prisma from "../../lib/db"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Mail, Shield } from "lucide-react"
