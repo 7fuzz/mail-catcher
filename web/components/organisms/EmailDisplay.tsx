@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Sun, Moon, User as UserIcon, Clock, Tag, Trash2 } from "lucide-react"
 import { Button } from '../atoms/Button'
 
@@ -11,8 +11,9 @@ interface EmailDisplayProps {
 }
 
 export const EmailDisplay = ({ email, attachments, onDelete }: EmailDisplayProps) => {
-  const [previewTheme, setPreviewTheme] = useState<'light' | 'dark'>('light')
+  const [viewMode, setViewMode] = useState<'themed' | 'original'>('themed')
   const [isDeleting, setIsDeleting] = useState(false)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const handleDelete = async () => {
     if (confirm('Are you sure you want to delete this email? This will also remove all its attachments.')) {
@@ -20,6 +21,18 @@ export const EmailDisplay = ({ email, attachments, onDelete }: EmailDisplayProps
       const formData = new FormData()
       formData.append('emailId', email.emailId)
       await onDelete(formData)
+    }
+  }
+
+  const adjustIframeHeight = () => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        const height = iframeRef.current.contentWindow.document.documentElement.scrollHeight;
+        // Add a little padding to prevent minor scrollbars
+        iframeRef.current.style.height = `${Math.max(height, 600) + 20}px`;
+      } catch (e) {
+        console.error("Could not resize iframe", e);
+      }
     }
   }
 
@@ -38,50 +51,70 @@ export const EmailDisplay = ({ email, attachments, onDelete }: EmailDisplayProps
           </div>
         </div>
         <div className="flex gap-2">
+          <div className="flex bg-bg-main p-1 rounded-lg border border-border-subtle">
+            <button
+              onClick={() => setViewMode('themed')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                viewMode === 'themed' ? 'bg-brand-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              Themed
+            </button>
+            <button
+              onClick={() => setViewMode('original')}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                viewMode === 'original' ? 'bg-brand-primary text-white shadow-sm' : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              Original
+            </button>
+          </div>
+
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleDelete}
             disabled={isDeleting}
-            className="text-red-500 hover:bg-red-500/10 hover:text-red-500"
+            className="text-red-500 hover:bg-red-500/10 hover:text-red-500 ml-2"
             title="Delete Email"
           >
             <Trash2 size={18} />
           </Button>
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            onClick={() => setPreviewTheme(previewTheme === 'light' ? 'dark' : 'light')}
-            className="flex gap-2 bg-bg-card"
-          >
-            {previewTheme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-            <span>{previewTheme === 'light' ? 'Dark' : 'Light'} Preview</span>
-          </Button>
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-6 bg-bg-main">
-        <div className={`rounded-lg p-8 shadow-sm border border-border-subtle min-h-full transition-colors duration-200 ${
-          previewTheme === 'light' ? 'bg-white' : 'bg-slate-950'
-        }`}>
-          {email.bodyHtml ? (
-            <div 
-              className={`prose max-w-none ${
-                previewTheme === 'light' ? 'prose-slate' : 'prose-invert'
-              }`}
-              dangerouslySetInnerHTML={{ __html: email.bodyHtml }} 
-            />
-          ) : (
-            <pre className={`whitespace-pre-wrap font-sans ${
-              previewTheme === 'light' ? 'text-slate-800' : 'text-slate-200'
-            }`}>
-              {email.bodyText}
-            </pre>
-          )}
-        </div>
+      <div className="flex-1 overflow-auto p-6 bg-bg-main">
+        {viewMode === 'original' && email.bodyHtml ? (
+          <div className="min-w-full inline-block align-middle">
+            <div className="bg-white rounded-lg shadow-sm border border-border-subtle min-w-[650px] overflow-hidden mx-auto max-w-4xl">
+              <iframe 
+                ref={iframeRef}
+                srcDoc={email.bodyHtml} 
+                className="w-full border-none block"
+                style={{ minHeight: '600px' }}
+                onLoad={adjustIframeHeight}
+                title="Original Email Content"
+                sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg p-8 shadow-sm border border-border-subtle min-h-full mx-auto max-w-4xl">
+            {email.bodyHtml ? (
+              <div 
+                className="prose prose-slate max-w-none"
+                dangerouslySetInnerHTML={{ __html: email.bodyHtml }} 
+              />
+            ) : (
+              <pre className="whitespace-pre-wrap font-sans text-slate-800">
+                {email.bodyText}
+              </pre>
+            )}
+          </div>
+        )}
 
         {attachments.length > 0 && (
-          <div className="mt-8 pt-8 border-t border-border-subtle">
+          <div className="mt-8 pt-8 border-t border-border-subtle mx-auto max-w-4xl">
             <h3 className="text-sm font-bold text-text-main mb-4 flex items-center gap-2">
               Attachments ({attachments.length})
             </h3>
