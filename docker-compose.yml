@@ -4,7 +4,7 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MARIADB_ROOT_PASSWORD=root
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_PASSWORD:-root-password}
       - MARIADB_DATABASE=mail_catcher
     volumes:
       - mysql-data:/var/lib/mysql
@@ -13,14 +13,17 @@ services:
   smtp-service:
     build: ./smtp-service
     ports:
-      - "2525:25"
+      - "587:25"
     depends_on:
       - db
     environment:
-      - DATABASE_URL=mysql://root:root@db:3306/mail_catcher
+      - DATABASE_URL=mysql://root:${MARIADB_ROOT_PASSWORD:-root-password}@db:3306/mail_catcher
       - UPLOAD_DIR=/app/data/attachments
+      - SSL_KEY=${SSL_KEY:-/etc/letsencrypt/live/example.com/privkey.pem}
+      - SSL_CERT=${SSL_CERT:-/etc/letsencrypt/live/example.com/fullchain.pem}
     volumes:
       - attachments-data:/app/data/attachments
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     restart: always
 
   web:
@@ -30,10 +33,10 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=mysql://root:root@db:3306/mail_catcher
+      - DATABASE_URL=mysql://root:${MARIADB_ROOT_PASSWORD:-root-password}@db:3306/mail_catcher
       - UPLOAD_DIR=/app/data/attachments
-      - AUTH_SECRET=very-secret-key-change-this-in-production
-      - NEXTAUTH_URL=http://localhost:3000
+      - AUTH_SECRET=${AUTH_SECRET:-very-secret-key}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://example.com}
     volumes:
       - attachments-data:/app/data/attachments
     restart: always

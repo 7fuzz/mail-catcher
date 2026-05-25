@@ -43,7 +43,7 @@ async function seed() {
 
 seed();
 
-const server = new SMTPServer({
+const serverOptions = {
   authOptional: false,
   async onAuth(auth, session, callback) {
     try {
@@ -78,7 +78,23 @@ const server = new SMTPServer({
         callback(new Error("Failed to save email"));
       });
   },
-});
+};
+
+if (process.env.SSL_KEY && process.env.SSL_CERT) {
+  try {
+    const key = process.env.SSL_KEY;
+    const cert = process.env.SSL_CERT;
+
+    serverOptions.key = key.startsWith("-----BEGIN") ? key : fs.readFileSync(key);
+    serverOptions.cert = cert.startsWith("-----BEGIN") ? cert : fs.readFileSync(cert);
+    serverOptions.secure = false; // Set to false to allow STARTTLS on port 587
+    console.log("SSL certificates loaded for SMTP service (STARTTLS enabled).");
+  } catch (err) {
+    console.error("Error loading SSL certificates:", err.message);
+  }
+}
+
+const server = new SMTPServer(serverOptions);
 
 function formatAddress(parsedAddr, envelopeAddr, smtpUser) {
   if (parsedAddr && parsedAddr.value && parsedAddr.value.length > 0) {
