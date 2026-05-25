@@ -49,7 +49,14 @@ export const DashboardClient = ({
   // Load saved states
   useEffect(() => {
     const savedSidebar = localStorage.getItem('sidebar-open')
-    if (savedSidebar !== null) setIsSidebarOpen(savedSidebar === 'true')
+    if (savedSidebar !== null) {
+      // Default to closed on mobile, saved state on desktop
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setIsSidebarOpen(false)
+      } else {
+        setIsSidebarOpen(savedSidebar === 'true')
+      }
+    }
     
     const savedListWidth = localStorage.getItem('list-width')
     if (savedListWidth) setListWidth(parseInt(savedListWidth, 10))
@@ -98,21 +105,45 @@ export const DashboardClient = ({
     }
   }, [isResizing, resize, stopResizing])
 
+  // Build back URL for mobile view
+  const currentParams = new URLSearchParams()
+  if (selectedInboxId) currentParams.set('inbox', selectedInboxId)
+  if (searchTerm) currentParams.set('search', searchTerm)
+  if (currentPage > 1) currentParams.set('page', currentPage.toString())
+  const backUrl = `/?${currentParams.toString()}`
+
   return (
-    <div className="flex h-screen bg-bg-main overflow-hidden text-text-main">
+    <div className="flex h-screen bg-bg-main overflow-hidden text-text-main relative w-full">
+      {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div className={`
+        fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out flex flex-col h-full
+        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:relative md:translate-x-0 md:z-0
+      `}>
         <Sidebar 
           inboxes={inboxes} 
           selectedInboxId={selectedInboxId} 
           user={user} 
           isAdmin={isAdmin} 
+          onCloseMobile={() => setIsSidebarOpen(false)}
         />
-      )}
+      </div>
 
       {/* Email List */}
       <div 
-        style={{ width: `${listWidth}px` }}
-        className="bg-bg-card border-r border-border-subtle flex flex-col flex-shrink-0 overflow-hidden relative"
+        style={{ '--list-width': `${listWidth}px` } as React.CSSProperties}
+        className={`
+          ${selectedEmail ? 'hidden md:flex' : 'flex'} 
+          bg-bg-card border-r border-border-subtle flex-col flex-shrink-0 overflow-hidden relative z-10 w-full md:w-[var(--list-width)]
+        `}
       >
         <div className="p-4 border-b border-border-subtle bg-bg-sidebar flex justify-between items-center h-[65px]">
           <div className="flex items-center gap-3">
@@ -121,7 +152,8 @@ export const DashboardClient = ({
               className="p-1.5 hover:bg-bg-main rounded-md text-text-muted hover:text-brand-primary transition-colors"
               title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
             >
-              {isSidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+              {isSidebarOpen ? <PanelLeftClose size={20} className="hidden md:block"/> : <PanelLeftOpen size={20} className="hidden md:block"/>}
+              <PanelLeftOpen size={20} className="md:hidden" />
             </button>
             <h2 className="font-semibold text-brand-primary truncate">
               {isAllInboxes ? 'All Inboxes' : 'Messages'}
@@ -139,16 +171,16 @@ export const DashboardClient = ({
 
         <div className="flex-1 overflow-y-auto">
           {emails.map((email: any) => {
-            const currentParams = new URLSearchParams()
-            if (selectedInboxId) currentParams.set('inbox', selectedInboxId)
-            currentParams.set('email', email.emailId)
-            if (searchTerm) currentParams.set('search', searchTerm)
-            if (currentPage > 1) currentParams.set('page', currentPage.toString())
+            const listParams = new URLSearchParams()
+            if (selectedInboxId) listParams.set('inbox', selectedInboxId)
+            listParams.set('email', email.emailId)
+            if (searchTerm) listParams.set('search', searchTerm)
+            if (currentPage > 1) listParams.set('page', currentPage.toString())
 
             return (
               <Link
                 key={email.emailId}
-                href={`/?${currentParams.toString()}`}
+                href={`/?${listParams.toString()}`}
                 className={`block p-4 border-b border-border-subtle hover:bg-bg-main transition-colors ${
                   selectedEmailId === email.emailId ? "bg-brand-primary/5 border-l-4 border-l-brand-primary" : ""
                 }`}
@@ -178,7 +210,7 @@ export const DashboardClient = ({
 
         {/* Resize Handle for List */}
         <div 
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-50 ${
+          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-50 hidden md:block ${
             isResizing ? 'bg-brand-primary w-1' : ''
           }`}
           onMouseDown={startResizing}
@@ -186,12 +218,16 @@ export const DashboardClient = ({
       </div>
 
       {/* Email Content */}
-      <div className="flex-1 flex flex-col bg-bg-card overflow-hidden">
+      <div className={`
+        ${selectedEmail ? 'flex' : 'hidden md:flex'} 
+        flex-1 flex-col bg-bg-card overflow-hidden absolute md:static inset-0 z-20 md:z-0
+      `}>
         {selectedEmail ? (
           <EmailDisplay 
             email={selectedEmail} 
             attachments={attachments} 
             onDelete={onDeleteEmail}
+            backUrl={backUrl}
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-text-muted bg-bg-main">

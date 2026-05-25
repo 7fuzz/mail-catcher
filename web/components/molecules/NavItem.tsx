@@ -8,12 +8,14 @@ interface NavItemProps {
   children: React.ReactNode;
   icon?: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
-export const NavItem = ({ href, active, children, icon, className }: NavItemProps) => {
+export const NavItem = ({ href, active, children, icon, className, onClick }: NavItemProps) => {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-200",
         active 
