@@ -127,6 +127,7 @@ export const DashboardClient = ({
         fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out flex flex-col h-full
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:relative md:translate-x-0 md:z-0
+        ${!isSidebarOpen ? 'md:hidden' : 'md:flex'}
       `}>
         <Sidebar 
           inboxes={inboxes} 
