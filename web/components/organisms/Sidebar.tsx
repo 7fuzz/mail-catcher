@@ -13,9 +13,10 @@ interface SidebarProps {
   selectedInboxId?: string
   user: any
   isAdmin: boolean
+  onCloseMobile?: () => void
 }
 
-export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProps) => {
+export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin, onCloseMobile }: SidebarProps) => {
   const [width, setWidth] = useState(256) // Default 16rem (w-64)
   const [isResizing, setIsResizing] = useState(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
@@ -64,15 +65,21 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
     }
   }, [width])
 
+  const handleMobileClick = () => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && onCloseMobile) {
+      onCloseMobile()
+    }
+  }
+
   return (
     <aside 
       ref={sidebarRef}
-      style={{ width: `${width}px` }}
-      className="bg-bg-sidebar border-r border-border-subtle flex flex-col flex-shrink-0 h-full relative"
+      style={{ '--sidebar-width': `${width}px` } as React.CSSProperties}
+      className="bg-bg-sidebar border-r border-border-subtle flex flex-col flex-shrink-0 h-full relative w-[280px] md:w-[var(--sidebar-width)]"
     >
       {/* Resize Handle */}
       <div 
-        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-50 ${
+        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-brand-primary/30 transition-colors z-50 hidden md:block ${
           isResizing ? 'bg-brand-primary w-1' : ''
         }`}
         onMouseDown={startResizing}
@@ -95,6 +102,7 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
             href="/?inbox=all"
             active={selectedInboxId === 'all'}
             icon={<Mail size={16} />}
+            onClick={handleMobileClick}
           >
             All Inboxes
           </NavItem>
@@ -104,6 +112,7 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
             <Link 
               key={inbox.credentialId} 
               href={`/?inbox=${inbox.credentialId}`}
+              onClick={handleMobileClick}
               className={`flex flex-col px-3 py-3 rounded-md transition-colors border border-transparent mb-1 group ${
                 selectedInboxId === inbox.credentialId 
                   ? "bg-brand-primary/10 border-brand-primary/20 shadow-sm" 
@@ -142,7 +151,7 @@ export const Sidebar = ({ inboxes, selectedInboxId, user, isAdmin }: SidebarProp
 
       <div className="p-4 border-t border-border-subtle space-y-2">
         {isAdmin && (
-          <NavItem href="/settings" icon={<Settings size={16} />}>
+          <NavItem href="/settings" icon={<Settings size={16} />} onClick={handleMobileClick}>
             Settings
           </NavItem>
         )}
